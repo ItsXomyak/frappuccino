@@ -1,10 +1,11 @@
 package svc
 
 import (
+	"strings"
+
 	"frappuccino/helper"
 	"frappuccino/internal/models"
 	"frappuccino/pkg/cerrors"
-	"strings"
 )
 
 func (s *svc) CreateMenuItem(item models.MenuItem) (*models.MenuItem, error) {
@@ -13,21 +14,21 @@ func (s *svc) CreateMenuItem(item models.MenuItem) (*models.MenuItem, error) {
 		s.Log.Error("Invalid menu item name", "error", err.Error())
 		return nil, err
 	}
+
 	dataInvent, err := s.Repo.InventoryRepo.GetInventory()
 	if err != nil {
 		s.Log.Error("Failed to get existing inventory items", "error", err.Error())
 		return nil, err
 	}
+	s.Log.Info("Inventory loaded", "count", len(dataInvent), "items", dataInvent) // Логируем инвентарь
 
-	ingredients, err := s.Repo.MenuRepo.GetIngredientsByMenuItemID(item.ID)
-	if err != nil {
-		s.Log.Error("Failed to get ingredients", "menu_item_id", item.ID, "error", err.Error())
-		return nil, err
+	if len(item.Ingredients) > 0 {
+		if err := helper.CheckerForMenuItems(item, dataInvent, item.Ingredients); err != nil {
+			s.Log.Error("Invalid menu item ingredients", "error", err.Error())
+			return nil, err
+		}
 	}
-	if err := helper.CheckerForMenuItems(item, dataInvent, ingredients); err != nil {
-		s.Log.Error("Invalid menu item ingredients", "error", err.Error())
-		return nil, err
-	}
+
 	createdItem, err := s.Repo.MenuRepo.CreateMenuItem(item)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
@@ -37,6 +38,15 @@ func (s *svc) CreateMenuItem(item models.MenuItem) (*models.MenuItem, error) {
 		s.Log.Error("Failed to create menu item in repository", "error", err.Error())
 		return nil, err
 	}
+
+	for _, ing := range item.Ingredients {
+		err = s.Repo.MenuRepo.AddIngredientToMenuItem(createdItem.ID, ing)
+		if err != nil {
+			s.Log.Error("Failed to add ingredient", "menu_item_id", createdItem.ID, "error", err.Error())
+			return nil, err
+		}
+	}
+
 	s.Log.Info("Successfully created menu item", "id", createdItem.ID)
 	return createdItem, nil
 }
@@ -95,7 +105,7 @@ func (s *svc) UpdateMenuItem(id int, item models.MenuItem) (*models.MenuItem, er
 	updatedItem, err := s.Repo.MenuRepo.UpdateMenuItem(id, item)
 	if err != nil {
 		s.Log.Error("Failed to update menu item", "id", id, "error", err.Error())
-		return nil, err 
+		return nil, err
 	}
 
 	s.Log.Info("Successfully updated menu item", "id", id)

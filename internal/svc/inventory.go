@@ -2,6 +2,7 @@ package svc
 
 import (
 	"fmt"
+
 	"frappuccino/helper"
 	"frappuccino/internal/models"
 )
@@ -94,27 +95,23 @@ func (s *svc) DeleteInvent(id int) error {
 }
 
 func (s *svc) GetLeftOvers(sortBy string, page int, pageSize int) (*models.InventoryResponse, error) {
-	// Получаем остатки инвентаря с репозитория
 	items, err := s.Repo.InventoryRepo.GetLeftOversWithPagination(sortBy, page, pageSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get inventory leftovers: %w", err)
 	}
 
-	// Получаем общее количество элементов в инвентаре
 	totalItems, err := s.Repo.InventoryRepo.CountTotalInventoryItems()
 	if err != nil {
 		return nil, fmt.Errorf("failed to count inventory items: %w", err)
 	}
 
-	// Рассчитываем количество страниц
 	totalPages := (totalItems + pageSize - 1) / pageSize
 
-	// Возвращаем данные с пагинацией
 	return &models.InventoryResponse{
 		CurrentPage: page,
 		PageSize:    pageSize,
 		HasNextPage: page*pageSize < totalItems,
 		TotalPages:  totalPages,
-		Data:        items, // Передаем срез []models.InventoryItem
+		Data:        items,
 	}, nil
 }

@@ -42,3 +42,6 @@ docker compose up
 docker exec -it frappuccino_db_1 psql -U latte -d frappuccino
 открывается cmd psql где можно делать запросы
 docker compose dowm
+
+docker-compose down && docker-compose up --build
+python -m SimpleHTTPServer 8000

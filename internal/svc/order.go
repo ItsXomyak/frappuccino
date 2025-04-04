@@ -2,9 +2,10 @@ package svc
 
 import (
 	"fmt"
+	"time"
+
 	"frappuccino/helper"
 	"frappuccino/internal/models"
-	"time"
 )
 
 func (s *svc) OrderCreate(data models.Order) error {
@@ -176,5 +177,4 @@ func (s *svc) GetNumberOfOrderedItems(startDate, endDate string) (map[string]int
 
 func (s *svc) BatchProcessOrders(orders []models.Order) (*models.BatchOrderResponse, error) {
 	return s.Repo.OrderRepo.BatchProcessOrders(orders)
-
 }

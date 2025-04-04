@@ -2,9 +2,10 @@ package helper
 
 import (
 	"fmt"
+	"strings"
+
 	"frappuccino/internal/models"
 	"frappuccino/pkg/cerrors"
-	"strings"
 )
 
 func CheckItemExists(items []models.InventoryItem, name, unit string) (*models.InventoryItem, error) {

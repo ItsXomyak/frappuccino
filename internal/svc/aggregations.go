@@ -2,6 +2,7 @@ package svc
 
 import (
 	"fmt"
+
 	"frappuccino/internal/models"
 )
 
@@ -18,7 +19,7 @@ func (s *svc) GetTotalSales() (float64, error) {
 		return 0, err
 	}
 
-	menuMap := make(map[int]models.MenuItem) // Изменяем тип ключа на int
+	menuMap := make(map[int]models.MenuItem)
 	for _, item := range menuAll {
 		menuMap[item.ID] = item
 	}
@@ -29,15 +30,15 @@ func (s *svc) GetTotalSales() (float64, error) {
 			continue
 		}
 		for _, item := range order.Items {
-			if menuItem, exists := menuMap[item.MenuItemID]; exists { // Заменяем ProductID на MenuItemID
+			if menuItem, exists := menuMap[item.MenuItemID]; exists {
 				total += menuItem.Price * float64(item.Quantity)
 			}
 		}
 	}
 
 	if total == 0 {
-		s.Log.Info("No closed orders found", "total", total) // Изменяем на Info, это не ошибка
-		return 0, nil                                        // Возвращаем nil, так как это не ошибка
+		s.Log.Info("No closed orders found, total sales: 0", "total", total)
+		return 0, nil // You can choose to return a meaningful message or a custom error
 	}
 
 	s.Log.Info("Successfully calculated total sales", "total", total)

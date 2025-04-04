@@ -3,12 +3,13 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"frappuccino/internal/models"
-	"frappuccino/internal/svc"
-	"frappuccino/pkg/cerrors"
 	"io"
 	"net/http"
 	"strconv"
+
+	"frappuccino/internal/models"
+	"frappuccino/internal/svc"
+	"frappuccino/pkg/cerrors"
 )
 
 type Handler struct {

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .small-button {
+            width: auto;
+            padding: 5px 10px;
+            margin-left: 5px;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .error {
+            color: red;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background-color: #e9e9e9;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .history-item {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #f1f1f1;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item:hover {
+            background-color: #e4e4e4;
+        }
+        .history-details {
+            flex-grow: 1;
+        }
+        .history-actions {
+            display: flex;
+        }
+        #historyContainer {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .url-container {
+            display: flex;
+            align-items: center;
+        }
+        .inline-group {
+            display: flex;
+            gap: 10px;
+        }
+        .port-input {
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Tester</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('request')">Request</div>
+            <div class="tab" onclick="switchTab('history')">History</div>
+            <div class="tab" onclick="switchTab('settings')">Settings</div>
+        </div>
+        
+        <div id="requestTab" class="tab-content">
+            <div class="form-group">
+                <label for="method">HTTP Method:</label>
+                <select id="method">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="urlSelect">URL:</label>
+                <div class="url-container">
+                    <select id="urlSelect" onchange="updateUrlInput()">
+                        <option value="custom">Custom URL</option>
+                        <option value="http://localhost:{port}/inventory" data-methods="GET,POST">http://localhost:{port}/inventory (GET, POST)</option>
+                        <option value="http://localhost:{port}/inventory/{id}" data-methods="GET,PUT,DELETE">http://localhost:{port}/inventory/{id} (GET, PUT, DELETE)</option>
+                        <option value="http://localhost:{port}/menu" data-methods="GET,POST">http://localhost:{port}/menu (GET, POST)</option>
+                        <option value="http://localhost:{port}/menu/{id}" data-methods="GET,PUT,DELETE">http://localhost:{port}/menu/{id} (GET, PUT, DELETE)</option>
+                        <option value="http://localhost:{port}/order" data-methods="GET,POST">http://localhost:{port}/order (GET, POST)</option>
+                        <option value="http://localhost:{port}/order/{id}" data-methods="GET,PUT,DELETE">http://localhost:{port}/order/{id} (GET, PUT, DELETE)</option>
+                        <option value="http://localhost:{port}/order/{id}/close" data-methods="POST">http://localhost:{port}/order/{id}/close (POST)</option>
+                        <option value="http://localhost:{port}/reports/total-sales" data-methods="GET">http://localhost:{port}/reports/total-sales (GET)</option>
+                        <option value="http://localhost:{port}/reports/popular-items" data-methods="GET">http://localhost:{port}/reports/popular-items (GET)</option>
+                        <option value="http://localhost:{port}/expensive-menu-item" data-methods="GET">http://localhost:{port}/expensive-menu-item (GET)</option>
+                        <option value="http://localhost:{port}/orders/numberOfOrderedItems" data-methods="GET">http://localhost:{port}/orders/numberOfOrderedItems (GET)</option>
+                        <option value="http://localhost:{port}/reports/search" data-methods="GET">http://localhost:{port}/reports/search (GET)</option>
+                        <option value="http://localhost:{port}/reports/orderedItemsByPeriod" data-methods="GET">http://localhost:{port}/reports/orderedItemsByPeriod (GET)</option>
+                        <option value="http://localhost:{port}/inventory/getLeftOvers" data-methods="GET">http://localhost:{port}/inventory/getLeftOvers (GET)</option>
+                        <option value="http://localhost:{port}/orders/batch-process" data-methods="POST">http://localhost:{port}/orders/batch-process (POST)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="urlInput">Custom URL:</label>
+                <input type="text" id="urlInput" placeholder="http://localhost:9090/api/endpoint">
+            </div>
+            
+            <div class="form-group" id="idInputContainer" style="display: none;">
+                <label for="idInput">ID Parameter:</label>
+                <input type="text" id="idInput" placeholder="Enter ID value">
+            </div>
+            
+            <div class="form-group">
+                <label for="body">Request Body (JSON or Raw Text):</label>
+                <textarea id="body" placeholder='{"name": "Coffee Beans", "stock": 1000, "unit": "g", "reorder_threshold": 200, "price": 10.50}'></textarea>
+            </div>
+            
+            <button onclick="sendRequest()">Send Request</button>
+            <div id="response"></div>
+        </div>
+        
+        <div id="historyTab" class="tab-content" style="display: none;">
+            <h2>Request History</h2>
+            <div id="historyContainer">
+                <!-- History items will be added here -->
+            </div>
+            <button onclick="clearHistory()">Clear History</button>
+        </div>
+        
+        <div id="settingsTab" class="tab-content" style="display: none;">
+            <h2>Settings</h2>
+            <div class="form-group">
+                <label for="defaultPort">Default Port:</label>
+                <input type="number" id="defaultPort" value="9090" min="1" max="65535">
+            </div>
+            <button onclick="saveSettings()">Save Settings</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize variables
+        let requestHistory = [];
+        let currentPort = 9090;
+        
+        // Load saved data from localStorage
+        function loadSavedData() {
+            const savedHistory = localStorage.getItem('apiTesterHistory');
+            if (savedHistory) {
+                requestHistory = JSON.parse(savedHistory);
+                updateHistoryUI();
+            }
+            
+            const savedPort = localStorage.getItem('apiTesterDefaultPort');
+            if (savedPort) {
+                currentPort = parseInt(savedPort);
+                document.getElementById('defaultPort').value = currentPort;
+            }
+        }
+        
+        // Switch between tabs
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.style.display = 'none');
+            
+            if (tabName === 'request') {
+                document.getElementById('requestTab').style.display = 'block';
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+            } else if (tabName === 'history') {
+                document.getElementById('historyTab').style.display = 'block';
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+            } else if (tabName === 'settings') {
+                document.getElementById('settingsTab').style.display = 'block';
+                document.querySelector('.tab:nth-child(3)').classList.add('active');
+            }
+        }
+        
+        // Update URL input based on selected option
+        function updateUrlInput() {
+            const urlSelect = document.getElementById('urlSelect');
+            const urlInput = document.getElementById('urlInput');
+            const idInputContainer = document.getElementById('idInputContainer');
+            
+            if (urlSelect.value === 'custom') {
+                urlInput.value = '';
+                idInputContainer.style.display = 'none';
+            } else {
+                let selectedUrl = urlSelect.value;
+                
+                // Replace {port} with the current port
+                selectedUrl = selectedUrl.replace('{port}', currentPort);
+                
+                // Check if URL contains an ID parameter
+                if (selectedUrl.includes('/{id}')) {
+                    idInputContainer.style.display = 'block';
+                } else {
+                    idInputContainer.style.display = 'none';
+                }
+                
+                urlInput.value = selectedUrl;
+            }
+        }
+        
+        // Save settings
+        function saveSettings() {
+            const portInput = document.getElementById('defaultPort');
+            const newPort = parseInt(portInput.value);
+            
+            if (newPort && newPort > 0 && newPort <= 65535) {
+                currentPort = newPort;
+                localStorage.setItem('apiTesterDefaultPort', currentPort);
+                alert('Settings saved successfully!');
+                
+                // Update all URLs in the dropdown
+                updateAllUrls();
+            } else {
+                alert('Please enter a valid port number (1-65535)');
+            }
+        }
+        
+        // Update all URLs in the dropdown with the new port
+        function updateAllUrls() {
+            const urlSelect = document.getElementById('urlSelect');
+            
+            for (let i = 0; i < urlSelect.options.length; i++) {
+                if (urlSelect.options[i].value !== 'custom') {
+                    urlSelect.options[i].value = urlSelect.options[i].value.replace(/{port}/g, currentPort);
+                    urlSelect.options[i].text = urlSelect.options[i].text.replace(/localhost:\d+/g, `localhost:${currentPort}`);
+                }
+            }
+            
+            // Update the current URL input if needed
+            updateUrlInput();
+        }
+        
+        // Send API request
+        async function sendRequest() {
+            const method = document.getElementById('method').value;
+            const urlInput = document.getElementById('urlInput');
+            const body = document.getElementById('body').value.trim();
+            const idInput = document.getElementById('idInput');
+            const responseDiv = document.getElementById('response');
+            
+            // Get the URL
+            let url = urlInput.value.trim();
+            
+            // Replace ID parameter if needed
+            if (url.includes('/{id}') && idInput.value) {
+                url = url.replace('/{id}', `/${idInput.value}`);
+            }
+            
+            responseDiv.innerHTML = 'Sending request...';
+            responseDiv.classList.remove('error');
+            
+            if (!url) {
+                responseDiv.innerHTML = 'Error: Please enter a valid URL';
+                responseDiv.classList.add('error');
+                return;
+            }
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                
+                if ((method === 'POST' || method === 'PUT') && body) {
+                    options.body = body;
+                }
+                
+                const startTime = new Date();
+                const response = await fetch(url, options);
+                const endTime = new Date();
+                const contentType = response.headers.get('content-type');
+                
+                let responseText;
+                if (contentType && contentType.includes('application/json')) {
+                    const json = await response.json();
+                    responseText = JSON.stringify(json, null, 2);
+                } else {
+                    responseText = await response.text();
+                }
+                
+                responseDiv.innerHTML = `Status: ${response.status} ${response.statusText}\n\n${responseText}`;
+                if (!response.ok) {
+                    responseDiv.classList.add('error');
+                }
+                
+                // Add to history
+                addToHistory({
+                    method,
+                    url,
+                    body,
+                    response: {
+                        status: response.status,
+                        statusText: response.statusText,
+                        body: responseText
+                    },
+                    timestamp: new Date().toISOString(),
+                    duration: endTime - startTime
+                });
+                
+            } catch (error) {
+                responseDiv.innerHTML = `Error: ${error.message}`;
+                responseDiv.classList.add('error');
+                
+                // Add failed request to history
+                addToHistory({
+                    method,
+                    url,
+                    body,
+                    error: error.message,
+                    timestamp: new Date().toISOString(),
+                    duration: 0
+                });
+            }
+        }
+        
+        // Add request to history
+        function addToHistory(requestData) {
+            // Add to the beginning of the array
+            requestHistory.unshift(requestData);
+            
+            // Limit history size to 50 items
+            if (requestHistory.length > 50) {
+                requestHistory.pop();
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('apiTesterHistory', JSON.stringify(requestHistory));
+            
+            // Update history UI
+            updateHistoryUI();
+        }
+        
+        // Update history UI
+        function updateHistoryUI() {
+            const historyContainer = document.getElementById('historyContainer');
+            historyContainer.innerHTML = '';
+            
+            if (requestHistory.length === 0) {
+                historyContainer.innerHTML = '<p>No history yet</p>';
+                return;
+            }
+            
+            requestHistory.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                
+                const statusColor = item.error ? 'red' : 
+                                    (item.response && item.response.status < 300) ? 'green' : 'orange';
+                
+                const formattedDate = new Date(item.timestamp).toLocaleString();
+                
+                historyItem.innerHTML = `
+                    <div class="history-details" onclick="loadHistoryItem(${index})">
+                        <strong>${item.method}</strong> ${item.url}
+                        <div><small>${formattedDate} - 
+                        <span style="color: ${statusColor}">
+                            ${item.error ? 'Error' : `${item.response.status} ${item.response.statusText}`}
+                        </span>
+                        (${item.duration}ms)</small></div>
+                    </div>
+                    <div class="history-actions">
+                        <button class="small-button" onclick="deleteHistoryItem(${index})">Delete</button>
+                    </div>
+                `;
+                
+                historyContainer.appendChild(historyItem);
+            });
+        }
+        
+        // Load history item to form
+        function loadHistoryItem(index) {
+            const item = requestHistory[index];
+            
+            document.getElementById('method').value = item.method;
+            document.getElementById('urlInput').value = item.url;
+            document.getElementById('body').value = item.body || '';
+            
+            // Select custom URL option
+            document.getElementById('urlSelect').value = 'custom';
+            
+            // Hide ID input container
+            document.getElementById('idInputContainer').style.display = 'none';
+            
+            // Switch to request tab
+            switchTab('request');
+        }
+        
+        // Delete history item
+        function deleteHistoryItem(index) {
+            requestHistory.splice(index, 1);
+            localStorage.setItem('apiTesterHistory', JSON.stringify(requestHistory));
+            updateHistoryUI();
+        }
+        
+        // Clear all history
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all history?')) {
+                requestHistory = [];
+                localStorage.setItem('apiTesterHistory', JSON.stringify(requestHistory));
+                updateHistoryUI();
+            }
+        }
+        
+        // Initialize on page load
+        window.onload = function() {
+            loadSavedData();
+            updateUrlInput();
+        };
+    </script>
+</body>
+</html>

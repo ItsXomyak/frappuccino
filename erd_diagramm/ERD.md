@@ -1,83 +1,86 @@
 erDiagram
-    substations ||--|{ power_lines : connects
-    substations ||--|{ transformers : contains
-    transformers ||--|{ voltage_levels : supports
-    transformers ||--|{ protection_equipment : secures
-    power_lines ||--o{ line_sections : segments
-    voltage_levels ||--o{ electrical_loads : supplies
-    electrical_loads ||--|{ meters : measures
-    protection_equipment ||--o{ fault_records : logs
+customers ||--o{ orders : places
+orders ||--|{ order_items : contains
+order_items ||--o{ menu_items : includes
+menu_items ||--o{ menu_item_ingredients : requires
+menu_item_ingredients ||--o{ inventory : uses
+orders ||--o{ order_status_history : tracks
+menu_items ||--o{ price_history : logs
+inventory ||--o{ inventory_transactions : records
 
-    substations {
+    customers {
         int id PK
         varchar name
-        decimal capacity_MVA
-        varchar location
-        timestamp_tz commissioned_at
+        jsonb preferences
+    }
+
+    orders {
+        int id PK
+        int customer_id FK
+        enum status "pending, preparing, ready, delivered, cancelled"
+        decimal total_amount
+        enum payment_method "cash, card, online"
+        jsonb special_instructions
+        timestamp_tz created_at
         timestamp_tz updated_at
     }
 
-    power_lines {
+    order_items {
         int id PK
-        int substation_id FK
-        varchar voltage_class
-        decimal length_km
-        boolean is_operational
-        timestamp_tz installed_at
+        int order_id FK
+        int menu_item_id FK
+        int quantity
+        decimal price
+        jsonb customizations
     }
 
-    transformers {
+    menu_items {
         int id PK
-        int substation_id FK
-        decimal rated_power_MVA
-        varchar primary_voltage
-        varchar secondary_voltage
-        boolean is_in_service
-        timestamp_tz installed_at
+        varchar name
+        varchar description
+        text[] categories
+        text[] allergens
+        decimal price
+        boolean available
+        enum size "small, medium, large"
     }
 
-    voltage_levels {
+    inventory {
         int id PK
-        int transformer_id FK
-        varchar voltage_class
-        decimal max_load_MW
+        varchar name UK
+        decimal stock
+        varchar unit
+        decimal reorder_threshold
+        decimal price
     }
 
-    electrical_loads {
+    menu_item_ingredients {
         int id PK
-        int voltage_level_id FK
-        varchar consumer_type
-        decimal demand_kW
+        int menu_item_id FK
+        int ingredient_id FK
+        decimal quantity
+        varchar unit
     }
 
-    meters {
+    order_status_history {
         int id PK
-        int electrical_load_id FK
-        varchar meter_type
-        decimal accuracy_class
-        timestamp_tz last_calibrated_at
+        int order_id FK
+        enum status "pending, preparing, ready, delivered, cancelled"
+        timestamp_tz changed_at
     }
 
-    protection_equipment {
+    price_history {
         int id PK
-        int transformer_id FK
-        varchar protection_type
-        boolean active
-        timestamp_tz last_tested_at
+        int menu_item_id FK
+        decimal old_price
+        decimal new_price
+        timestamp_tz changed_at
     }
 
-    fault_records {
+    inventory_transactions {
         int id PK
-        int protection_equipment_id FK
-        varchar fault_type
-        text description
+        int ingredient_id FK
+        decimal change_amount
+        varchar transaction_type "purchase, use"
         timestamp_tz occurred_at
-    }
-
-    line_sections {
-        int id PK
-        int power_line_id FK
-        decimal section_length_km
-        varchar conductor_type
-        timestamp_tz maintained_at
     }

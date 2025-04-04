@@ -1,10 +1,11 @@
 package svc
 
 import (
-	"frappuccino/internal/models"
-	repo "frappuccino/internal/repo"
 	"log/slog"
 	"os"
+
+	"frappuccino/internal/models"
+	repo "frappuccino/internal/repo"
 )
 
 type Svc interface {

@@ -3,9 +3,10 @@ package menu
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
+
 	"frappuccino/internal/models"
 	"frappuccino/pkg/cerrors"
-	"log/slog"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
@@ -17,7 +18,8 @@ type MenuRepository interface {
 	GetMenuItemByID(id int) (*models.MenuItem, error)
 	UpdateMenuItem(id int, item models.MenuItem) (*models.MenuItem, error)
 	DeleteMenuItem(id int) error
-	GetIngredientsByMenuItemID(menuItemID int) ([]models.MenuItemIngredient, error) // Новый метод
+	GetIngredientsByMenuItemID(menuItemID int) ([]models.MenuItemIngredient, error)
+	AddIngredientToMenuItem(menuItemID int, ingredient models.MenuItemIngredient) error
 }
 
 type menuRepository struct {
@@ -44,6 +46,17 @@ func (r *menuRepository) CreateMenuItem(item models.MenuItem) (*models.MenuItem,
 	item.ID = id
 	slog.Info("Menu item created", "item_id", id, "name", item.Name)
 	return &item, nil
+}
+
+func (r *menuRepository) AddIngredientToMenuItem(menuItemID int, ingredient models.MenuItemIngredient) error {
+	_, err := r.db.Exec(`
+        INSERT INTO menu_item_ingredients (menu_item_id, ingredient_id, quantity, unit)
+        VALUES ($1, $2, $3, $4)`,
+		menuItemID, ingredient.IngredientID, ingredient.Quantity, ingredient.Unit)
+	if err != nil {
+		return fmt.Errorf("failed to add ingredient to menu item: %v", err)
+	}
+	return nil
 }
 
 func (r *menuRepository) GetIngredientsByMenuItemID(menuItemID int) ([]models.MenuItemIngredient, error) {
@@ -148,19 +161,21 @@ func (r *menuRepository) UpdateMenuItem(id int, item models.MenuItem) (*models.M
 }
 
 func (r *menuRepository) DeleteMenuItem(id int) error {
-	result, err := r.db.Exec(`DELETE FROM menu_items WHERE id = $1`, id)
+	var count int
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM order_items WHERE menu_item_id = $1`, id).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("failed to check for related order items: %v", err)
+	}
+
+	if count > 0 {
+		return fmt.Errorf("cannot delete menu item with ID %d because it is used in orders", id)
+	}
+
+	// Удаление меню
+	_, err = r.db.Exec(`DELETE FROM menu_items WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete menu item: %v", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to check rows affected: %v", err)
-	}
-	if rowsAffected == 0 {
-		return cerrors.ErrMenuItemNotFound
-	}
-
-	slog.Info("Menu item deleted", "item_id", id)
 	return nil
 }

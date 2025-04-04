@@ -3,6 +3,7 @@ package invent
 import (
 	"database/sql"
 	"fmt"
+
 	"frappuccino/internal/models"
 
 	_ "github.com/lib/pq"
@@ -48,9 +49,9 @@ func (i *inventory) GetByNameAndUnit(name, unit string) (models.InventoryItem, e
 func (i *inventory) CreateInventory(data models.InventoryItem) error {
 	var id int
 	err := i.db.QueryRow(`
-        INSERT INTO inventory (name, stock, unit, reorder_threshold)
-        VALUES ($1, $2, $3, $4) RETURNING id`,
-		data.Name, data.Stock, data.Unit, data.ReorderThreshold).
+        INSERT INTO inventory (name, stock, unit, reorder_threshold, price)
+        VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+		data.Name, data.Stock, data.Unit, data.ReorderThreshold, data.Price).
 		Scan(&id)
 	if err != nil {
 		return fmt.Errorf("failed to create inventory item: %v", err)
@@ -117,6 +118,36 @@ func (i *inventory) PutInventory(id int, upDate models.InventoryItem) error {
 }
 
 func (i *inventory) DeleteInvent(id int) error {
+	// Проверка зависимостей в таблице menu_item_ingredients
+	var count int
+	err := i.db.QueryRow(`SELECT COUNT(*) FROM menu_item_ingredients WHERE ingredient_id = $1`, id).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("failed to check for related menu item ingredients: %v", err)
+	}
+
+	// Если зависимости найдены, удаляем их
+	if count > 0 {
+		_, err := i.db.Exec(`DELETE FROM menu_item_ingredients WHERE ingredient_id = $1`, id)
+		if err != nil {
+			return fmt.Errorf("failed to delete related menu item ingredients: %v", err)
+		}
+	}
+
+	// Проверка зависимостей в таблице inventory_transactions
+	err = i.db.QueryRow(`SELECT COUNT(*) FROM inventory_transactions WHERE ingredient_id = $1`, id).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("failed to check for related inventory transactions: %v", err)
+	}
+
+	// Если зависимости найдены, удаляем их
+	if count > 0 {
+		_, err := i.db.Exec(`DELETE FROM inventory_transactions WHERE ingredient_id = $1`, id)
+		if err != nil {
+			return fmt.Errorf("failed to delete related inventory transactions: %v", err)
+		}
+	}
+
+	// Удаление элемента из таблицы inventory
 	result, err := i.db.Exec(`DELETE FROM inventory WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete inventory item: %v", err)
@@ -129,6 +160,7 @@ func (i *inventory) DeleteInvent(id int) error {
 	if rowsAffected == 0 {
 		return fmt.Errorf("item with ID %d not found", id)
 	}
+
 	return nil
 }
 

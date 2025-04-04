@@ -4,16 +4,17 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"frappuccino/config"
-	"frappuccino/internal/server"
-	"frappuccino/internal/svc"
 	"log"
 	"os"
 	"strconv"
 
+	"frappuccino/config"
+	"frappuccino/internal/server"
+	"frappuccino/internal/svc"
+
 	repo "frappuccino/internal/repo"
 
-	_ "github.com/lib/pq" 
+	_ "github.com/lib/pq"
 )
 
 var (
@@ -49,8 +50,6 @@ func main() {
 	service := svc.NewSvc(container)
 
 	handler := server.New(service)
-
-	
 
 	srv := server.NewServer(strconv.Itoa(port), *handler)
 	srv.Start()

@@ -2,24 +2,30 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
 func (h *Handler) GetTotalSaleS(w http.ResponseWriter, r *http.Request) {
 	statusCode := 200
-	text := "total sales"
-
-	defer func() {
-		Respond(w, statusCode, text)
-	}()
+	var text string
 
 	totalSales, err := h.Service.GetTotalSales()
 	if err != nil {
 		statusCode = 400
 		text = "Failed to get total sales"
+		Respond(w, statusCode, text) // Ensure that the response is sent immediately in case of error
 		return
 	}
 
+	// Check if total sales is 0 and handle it accordingly
+	if totalSales == 0 {
+		text = fmt.Sprintf("No sales recorded for the closed orders")
+		Respond(w, statusCode, text)
+		return
+	}
+
+	// Return the actual total sales if valid
 	response := map[string]float64{
 		"total_sales": totalSales,
 	}
@@ -28,6 +34,7 @@ func (h *Handler) GetTotalSaleS(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		statusCode = 400
 		text = "Failed to encode response"
+		Respond(w, statusCode, text)
 	}
 }
 

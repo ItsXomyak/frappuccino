@@ -3,11 +3,12 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"frappuccino/internal/models"
-	"frappuccino/pkg/cerrors"
 	"io"
 	"net/http"
 	"strconv"
+
+	"frappuccino/internal/models"
+	"frappuccino/pkg/cerrors"
 )
 
 func (h *Handler) AddNewOrder(w http.ResponseWriter, r *http.Request) {

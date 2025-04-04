@@ -2,8 +2,9 @@ package svc
 
 import (
 	"fmt"
-	"frappuccino/internal/models"
 	"strings"
+
+	"frappuccino/internal/models"
 )
 
 func (s *svc) SearchFullText(query, filter, minPrice, maxPrice string) (*models.SearchResponse, error) {
@@ -17,7 +18,7 @@ func (s *svc) SearchFullText(query, filter, minPrice, maxPrice string) (*models.
 		return nil, fmt.Errorf("failed to search orders: %w", err)
 	}
 
-	// Рассчитываем релевантность для каждого результата ( надо норм сделать а не так)
+	// Рассчитываем релевантность для каждого результата
 	for i := range menuResults {
 		menuResults[i].Relevance = calculateRelevance(menuResults[i].Name, query)
 	}
@@ -26,10 +27,16 @@ func (s *svc) SearchFullText(query, filter, minPrice, maxPrice string) (*models.
 		orderResults[i].Relevance = calculateRelevance(orderResults[i].Name, query)
 	}
 
+	// Преобразуем []*models.Search в []models.Search для заказов
+	ordersSlice := make([]models.Search, len(orderResults))
+	for i, order := range orderResults {
+		ordersSlice[i] = *order
+	}
+
 	// Формируем ответ
 	response := &models.SearchResponse{
-		MenuItems:    menuResults,
-		Orders:       orderResults,
+		MenuItems:    menuResults, // Предполагаем, что это уже правильный тип
+		Orders:       ordersSlice, // Преобразованный слайс
 		TotalMatches: len(menuResults) + len(orderResults),
 	}
 
@@ -49,6 +56,5 @@ func (s *svc) GetOrderedItemsByPeriod(period, month, year string) ([]models.Orde
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ordered items by period: %w", err)
 	}
-
 	return report, nil
 }

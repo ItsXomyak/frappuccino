@@ -3,9 +3,10 @@ package order
 import (
 	"database/sql"
 	"fmt"
-	"frappuccino/internal/models"
 	"strings"
 	"time"
+
+	"frappuccino/internal/models"
 
 	_ "github.com/lib/pq"
 )
@@ -317,22 +318,26 @@ func (r *orderRepository) GetPopularItems() ([]models.PopularItem, error) {
 }
 
 func (r *orderRepository) GetNumberOfOrderedItems(startDate, endDate string) (map[string]int, error) {
-	queryStr := "SELECT item_name, COUNT(*) FROM orders"
+	queryStr := `
+    SELECT m.name AS item_name, COUNT(*)
+	FROM order_items oi
+	JOIN menu_items m ON oi.menu_item_id = m.id
+	JOIN orders o ON oi.order_id = o.id
+	GROUP BY m.name;
+	`
 
-	// Создаем условия фильтрации по дате
+	// условия фильтрации по дате
 	var conditions []string
 	if startDate != "" {
-		conditions = append(conditions, fmt.Sprintf("order_date >= '%s'", startDate))
+		conditions = append(conditions, fmt.Sprintf("o.created_at >= '%s'", startDate))
 	}
 	if endDate != "" {
-		conditions = append(conditions, fmt.Sprintf("order_date <= '%s'", endDate))
+		conditions = append(conditions, fmt.Sprintf("o.created_at <= '%s'", endDate))
 	}
 
 	if len(conditions) > 0 {
 		queryStr += " WHERE " + strings.Join(conditions, " AND ")
 	}
-
-	queryStr += " GROUP BY item_name"
 
 	rows, err := r.db.Query(queryStr)
 	if err != nil {
@@ -352,7 +357,6 @@ func (r *orderRepository) GetNumberOfOrderedItems(startDate, endDate string) (ma
 		results[itemName] = count
 	}
 
-	// Проверка на ошибки после завершения перебора
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error after scanning rows: %w", err)
 	}
@@ -361,23 +365,20 @@ func (r *orderRepository) GetNumberOfOrderedItems(startDate, endDate string) (ma
 }
 
 func (r *orderRepository) BatchProcessOrders(orders []models.Order) (*models.BatchOrderResponse, error) {
-	// Начинаем транзакцию для обеспечения целостности данных
 	tx, err := r.db.Begin()
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback() // В случае ошибки откатим транзакцию
+	defer tx.Rollback()
 
 	var processedOrders []models.ProcessedOrder
 	var totalRevenue float64
 	var inventoryUpdates []models.InventoryUpdate
 
-	// Обрабатываем каждый заказ
 	for _, order := range orders {
-		// Получаем имя клиента
 		customerName, err := r.GetCustomerNameByID(order.CustomerID)
 		if err != nil {
-			// Если ошибка при получении имени, отклоняем заказ
+			// отклоняем заказ
 			processedOrders = append(processedOrders, models.ProcessedOrder{
 				CustomerName: customerName,
 				Status:       "rejected",
@@ -401,7 +402,6 @@ func (r *orderRepository) BatchProcessOrders(orders []models.Order) (*models.Bat
 				continue
 			}
 
-			// Проверяем, есть ли достаточное количество товара
 			if inventoryQuantity < item.Quantity {
 				processedOrders = append(processedOrders, models.ProcessedOrder{
 					CustomerName: customerName,
@@ -411,13 +411,11 @@ func (r *orderRepository) BatchProcessOrders(orders []models.Order) (*models.Bat
 				continue
 			}
 
-			// Обновляем количество в инвентаре
 			_, err = tx.Exec("UPDATE inventory SET quantity = quantity - $1 WHERE item_id = $2", item.Quantity, item.MenuItemID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to update inventory: %w", err)
 			}
 
-			// Добавляем изменения в инвентарь в список
 			inventoryUpdates = append(inventoryUpdates, models.InventoryUpdate{
 				IngredientID: item.MenuItemID,
 				Name:         fmt.Sprintf("Item %d", item.MenuItemID), // Это стоит заменить на реальное название товара
@@ -426,14 +424,13 @@ func (r *orderRepository) BatchProcessOrders(orders []models.Order) (*models.Bat
 			})
 		}
 
-		// Успешная обработка заказа
 		processedOrders = append(processedOrders, models.ProcessedOrder{
 			CustomerName: customerName,
 			Status:       "accepted",
 			Total:        order.TotalAmount,
 		})
 
-		// Подсчитываем общий доход
+		// общий доход
 		totalRevenue += order.TotalAmount
 	}
 

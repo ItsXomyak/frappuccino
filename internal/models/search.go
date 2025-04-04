@@ -15,6 +15,6 @@ type SearchResponse struct {
 }
 
 type OrderedItemReport struct {
-	Period string `json:"period"` 
-	Count  int    `json:"count"`  
+	Period string `json:"period"`
+	Count  int    `json:"count"`
 }

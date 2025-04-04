@@ -55,7 +55,7 @@ func GenerateID() (string, error) {
 }
 
 func ClearId(id string) string {
-	cleanStr := strings.ReplaceAll(id, `\`, "")    
-	cleanStr = strings.ReplaceAll(cleanStr, `"`, "") 
+	cleanStr := strings.ReplaceAll(id, `\`, "")
+	cleanStr = strings.ReplaceAll(cleanStr, `"`, "")
 	return cleanStr
 }
